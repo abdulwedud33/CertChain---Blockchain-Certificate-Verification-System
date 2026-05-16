@@ -9,10 +9,28 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+function normalizeOrigin(value?: string) {
+  if (!value) return undefined;
+
+  return value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+    .map((origin) => {
+      try {
+        return new URL(origin).origin;
+      } catch {
+        return origin.replace(/\/$/, "");
+      }
+    });
+}
+
+const allowedOrigins = normalizeOrigin(process.env.CLIENT_URL) || ["http://localhost:3000"];
+
 // ─── Middleware ────────────────────────────────────────────────────────────────
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:3000",
+  origin: allowedOrigins,
   credentials: true,
 }));
 
