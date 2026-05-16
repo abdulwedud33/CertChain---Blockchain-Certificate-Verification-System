@@ -127,9 +127,26 @@ export default function IssueCertificatePage() {
 
     } catch (err: any) {
       setStep("idle");
+      // Map common blockchain/provider errors to user-friendly messages
+      const raw = err?.message || String(err);
+      let userMsg = raw;
+
+      if (raw.includes("No contract found at")) {
+        userMsg = "No contract at configured address. Check contract address and MetaMask network.";
+      } else if (raw.includes("External transactions to internal accounts cannot include data")) {
+        userMsg = "MetaMask refused the transaction: contract address or network mismatch. Verify the deployed contract address and your MetaMask network.";
+      } else if (raw.toLowerCase().includes("insufficient funds")) {
+        userMsg = "Insufficient funds for gas. Fund your wallet with testnet ETH.";
+      } else if (raw.toLowerCase().includes("user rejected")) {
+        userMsg = "Transaction rejected in MetaMask.";
+      } else if (raw.includes("Simulated transaction failed")) {
+        // Include original message after a brief guidance
+        userMsg = `Transaction simulation failed: ${raw.replace("Simulated transaction failed:","")}. Check parameters or certificate ID uniqueness.`;
+      }
+
       toast({
         title: "Failed to issue certificate",
-        description: err.message || "Something went wrong.",
+        description: userMsg,
         variant: "destructive",
       });
     }
