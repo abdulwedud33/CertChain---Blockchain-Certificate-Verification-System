@@ -1,0 +1,27 @@
+// Prisma schema for the Certificate Verification System
+// Run: npx prisma db push   (creates the table)
+// Run: npx prisma generate  (generates the client)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Uses DATABASE_URL from server/.env
+  // Example Neon DB URL: postgresql://user:pass@host/db?sslmode=require
+  url      = env("DATABASE_URL")
+}
+
+model Certificate {
+  id              String   @id @default(cuid())
+  studentName     String
+  courseName      String
+  certificateId   String   @unique   // Must be unique — same as on-chain
+  issueDate       DateTime
+  transactionHash String             // Ethereum tx hash returned after issueCertificate()
+  issuerWallet    String             // MetaMask address of the admin who issued it
+  createdAt       DateTime @default(now())
+
+  @@map("certificates")
+}
