@@ -1,4 +1,4 @@
-import { BrowserProvider, Contract, parseUnits } from "ethers";
+import { BrowserProvider, Contract } from "ethers";
 
 // Minimal ABI — only the functions we call from the frontend
 const CONTRACT_ABI = [
@@ -88,9 +88,7 @@ export async function issueCertificateOnChain(params: {
 
   // Simulate the call first to get a revert reason without sending a transaction
   try {
-    // callStatic will throw if the call would revert
-    // @ts-ignore: callStatic typing may vary by ethers versions
-    await (contract as any).callStatic.issueCertificate(
+    await contract.getFunction("issueCertificate").staticCall(
       params.studentName,
       params.courseName,
       params.certificateId,
