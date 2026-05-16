@@ -71,22 +71,56 @@ export async function issueCertificateOnChain(params: {
   certificateId: string;
   issueDate: string; // ISO string
 }): Promise<string> {
-  const { signer } = await getSignerProvider();
+  const { provider, signer } = await getSignerProvider();
+
+  // Ensure there's a contract deployed at the configured address
+  const code = await provider.getCode(CONTRACT_ADDRESS);
+  if (!code || code === "0x" || code === "0x0") {
+    throw new Error(
+      `No contract found at ${CONTRACT_ADDRESS}. Check NEXT_PUBLIC_CONTRACT_ADDRESS and your MetaMask network.`
+    );
+  }
+
   const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
   // Convert date to Unix timestamp (seconds)
   const issueTimestamp = Math.floor(new Date(params.issueDate).getTime() / 1000);
 
-  const tx = await contract.issueCertificate(
-    params.studentName,
-    params.courseName,
-    params.certificateId,
-    issueTimestamp
-  );
+  // Simulate the call first to get a revert reason without sending a transaction
+  try {
+    // callStatic will throw if the call would revert
+    // @ts-ignore: callStatic typing may vary by ethers versions
+    await (contract as any).callStatic.issueCertificate(
+      params.studentName,
+      params.courseName,
+      params.certificateId,
+      issueTimestamp
+    );
+  } catch (simError: any) {
+    console.error("Simulated issueCertificate reverted:", simError);
+    throw new Error(
+      `Simulated transaction failed: ${simError?.reason || simError?.message || JSON.stringify(simError)}`
+    );
+  }
 
-  // Wait for 1 confirmation
-  await tx.wait(1);
-  return tx.hash;
+  try {
+    const tx = await contract.issueCertificate(
+      params.studentName,
+      params.courseName,
+      params.certificateId,
+      issueTimestamp
+    );
+
+    // Wait for 1 confirmation
+    await tx.wait(1);
+    return tx.hash;
+  } catch (sendError: any) {
+    // Log full error for easier debugging in browser console
+    console.error("issueCertificate send error:", sendError);
+    // If MetaMask returns a structured RPC error include useful fields
+    const rpcMessage = sendError?.error?.message || sendError?.reason || sendError?.message;
+    throw new Error(`Transaction failed: ${rpcMessage || JSON.stringify(sendError)}`);
+  }
 }
 
 /**
