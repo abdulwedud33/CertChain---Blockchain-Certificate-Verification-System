@@ -1,6 +1,9 @@
 {
   "name": "cert-chain-server",
   "version": "1.0.0",
+  "prisma": {
+    "schema": "src/prisma/schema.prisma"
+  },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "postinstall": "prisma generate",
